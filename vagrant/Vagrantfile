@@ -1,53 +1,54 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# Carga las bibliotecas necesarias para manejar rutas y archivos
 require 'pathname'
 require 'fileutils'
 
-# Method to load environment variables from an .env file and return them as a hash
+# Método para cargar variables de entorno desde un archivo .env y devolverlas como un hash
 def load_env(file)
   env_vars = {}
-  if File.exist?(file)
-    File.readlines(file).each do |line|
-      key, value = line.strip.split('=', 2)
+  if File.exist?(file) # Verifica si el archivo .env existe
+    File.readlines(file).each do |line| # Lee cada línea del archivo .env
+      key, value = line.strip.split('=', 2) # Divide la línea en clave y valor
       if key && value
-        ENV[key] = value
-        env_vars[key] = value
+        ENV[key] = value # Asigna la variable de entorno al sistema
+        env_vars[key] = value # Guarda la variable en el hash
       end
     end
   else
-    raise "Env file not found: #{file}"
+    raise "Env file not found: #{file}" # Lanza un error si no se encuentra el archivo
   end
   env_vars
 end
 
-# Load .env file from the top level and get the loaded variables
+# Ruta completa al archivo .env
 env_file_path = File.expand_path("../../.env", __FILE__)
-puts "Loading .env file from: #{env_file_path}"
-loaded_env_vars = load_env(env_file_path)
+puts "Loading .env file from: #{env_file_path}" # Muestra la ruta del archivo .env que se cargará
+loaded_env_vars = load_env(env_file_path) # Carga las variables de entorno desde el archivo .env
 
-# Print only the variables that were loaded from the .env file
+# Imprime solo las variables que se cargaron del archivo .env
 loaded_env_vars.each do |key, value|
-  puts "#{key}: #{value}"
+  puts "#{key}: #{value}" # Muestra cada variable de entorno cargada
 end
 
-
+# Configuración principal de Vagrant
 Vagrant.configure("2") do |config|
 
-  # Choose a base box
+  # Selección de la imagen base para la máquina virtual
   config.vm.box = "ubuntu/jammy64"
 
-  # Network configuration
-  config.vm.network "forwarded_port", guest: 5000, host: 5000
-  config.vm.network "forwarded_port", guest: 8089, host: 8089
+  # Configuración de red: redirecciona puertos del anfitrión al invitado
+  config.vm.network "forwarded_port", guest: 5000, host: 5000 # Puerto para la aplicación Flask
+  config.vm.network "forwarded_port", guest: 8089, host: 8089 # Otro puerto para servicios adicionales
 
-  # Synced folders
-  config.vm.synced_folder "../", "/vagrant"
+  # Configuración de carpetas compartidas entre el anfitrión y el invitado
+  config.vm.synced_folder "../", "/vagrant" # Sincroniza el directorio del proyecto con la VM
 
-  # Use Ansible for provisioning
+  # Uso de Ansible para la provisión de la máquina
   config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "00_main.yml"
-    ansible.extra_vars = {
+    ansible.playbook = "00_main.yml" # Archivo de configuración de Ansible
+    ansible.extra_vars = { # Variables adicionales para el playbook de Ansible
       flask_app_name: ENV['FLASK_APP_NAME'],
       flask_env: ENV['FLASK_ENV'],
       domain: ENV['DOMAIN'],
@@ -62,27 +63,28 @@ Vagrant.configure("2") do |config|
     }
   end
 
-  # Load environment variables on vagrant ssh
+  # Cargar variables de entorno al iniciar sesión en la máquina virtual
   config.vm.provision "shell", inline: <<-SHELL
-    ENV_FILE="/vagrant/.env"
-    if [ -f $ENV_FILE ]; then
-      export $(cat $ENV_FILE | xargs)
+    ENV_FILE="/vagrant/.env" # Ruta al archivo .env dentro de la máquina virtual
+    if [ -f $ENV_FILE ]; then # Verifica si el archivo .env existe
+      export $(cat $ENV_FILE | xargs) # Exporta las variables al entorno actual
       while IFS= read -r line; do
-        echo "export $line" >> /etc/profile.d/vagrant_env.sh
+        echo "export $line" >> /etc/profile.d/vagrant_env.sh # Agrega las variables a un script de inicio
       done < $ENV_FILE
     else
-      echo "Env file not found: $ENV_FILE"
+      echo "Env file not found: $ENV_FILE" # Muestra un error si el archivo no existe
       exit 1
     fi
   SHELL
 
+  # Configuración para ejecutar un script al iniciar la VM
   config.vm.provision "shell", run: "always", inline: <<-SHELL
-    echo 'source /etc/profile.d/vagrant_env.sh' >> /home/vagrant/.bashrc
+    echo 'source /etc/profile.d/vagrant_env.sh' >> /home/vagrant/.bashrc # Carga las variables en cada nueva sesión
   SHELL
 
-  # Provider configuration
+  # Configuración del proveedor de la máquina virtual (VirtualBox en este caso)
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = "2048"
-    vb.cpus = 4
+    vb.memory = "2048" # Asigna 2048 MB de memoria a la VM
+    vb.cpus = 4        # Asigna 4 CPUs a la VM
   end
 end

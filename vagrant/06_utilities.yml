@@ -1,15 +1,15 @@
 ---
-- hosts: all
-  become: true
+- hosts: all # Aplica las tareas a todos los hosts definidos en el inventario
+  become: true # Eleva los privilegios para ejecutar las tareas como superusuario
 
-  tasks:
+  tasks: # Definición de las tareas a ejecutar
 
-    - name: Add commands to .bashrc
-      lineinfile:
-        path: /home/vagrant/.bashrc
-        line: '{{ item }}'
-        create: yes
-      with_items:
-        - 'source {{ working_dir }}venv/bin/activate'
-        - 'cd {{ working_dir }}'
-      when: ansible_user == 'vagrant'
+    - name: Add commands to .bashrc # Nombre descriptivo de la tarea
+      lineinfile: # Módulo de Ansible para gestionar líneas en archivos
+        path: /home/vagrant/.bashrc # Ruta del archivo donde se agregarán las líneas
+        line: '{{ item }}' # Línea que se agregará, reemplazando {{ item }} con los elementos de la lista
+        create: yes # Crea el archivo si no existe
+      with_items: # Lista de elementos que se agregarán al archivo
+        - 'source {{ working_dir }}venv/bin/activate' # Activa el entorno virtual de Python
+        - 'cd {{ working_dir }}' # Cambia el directorio de trabajo al directorio especificado
+      when: ansible_user == 'vagrant' # Condición: Solo se ejecutará si el usuario es 'vagrant'

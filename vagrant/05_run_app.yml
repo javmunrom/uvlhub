@@ -1,46 +1,46 @@
 ---
-- hosts: all
-  become: true
+- hosts: all # Aplica las tareas a todos los hosts definidos en el inventario
+  become: true # Eleva los privilegios para ejecutar las tareas como superusuario
 
-  vars:
-    common_environment:
-      FLASK_APP_NAME: "{{ flask_app_name }}"
-      FLASK_ENV: "{{ flask_env }}"
-      DOMAIN: "{{ domain }}"
-      MARIADB_HOSTNAME: "{{ mariadb_hostname }}"
-      MARIADB_PORT: "{{ mariadb_port }}"
-      MARIADB_DATABASE: "{{ mariadb_database }}"
-      MARIADB_TEST_DATABASE: "{{ mariadb_test_database }}"
-      MARIADB_USER: "{{ mariadb_user }}"
-      MARIADB_PASSWORD: "{{ mariadb_password }}"
-      MARIADB_ROOT_PASSWORD: "{{ mariadb_root_password }}"
-      WORKING_DIR: "{{ working_dir }}"
+  vars: # Declaración de variables para el entorno común
+    common_environment: # Diccionario con las variables de entorno necesarias
+      FLASK_APP_NAME: "{{ flask_app_name }}" # Nombre de la aplicación Flask
+      FLASK_ENV: "{{ flask_env }}" # Entorno Flask (desarrollo, producción, etc.)
+      DOMAIN: "{{ domain }}" # Dominio de la aplicación
+      MARIADB_HOSTNAME: "{{ mariadb_hostname }}" # Hostname de la base de datos MariaDB
+      MARIADB_PORT: "{{ mariadb_port }}" # Puerto de la base de datos MariaDB
+      MARIADB_DATABASE: "{{ mariadb_database }}" # Nombre de la base de datos
+      MARIADB_TEST_DATABASE: "{{ mariadb_test_database }}" # Nombre de la base de datos de prueba
+      MARIADB_USER: "{{ mariadb_user }}" # Usuario de MariaDB
+      MARIADB_PASSWORD: "{{ mariadb_password }}" # Contraseña del usuario de MariaDB
+      MARIADB_ROOT_PASSWORD: "{{ mariadb_root_password }}" # Contraseña del usuario root de MariaDB
+      WORKING_DIR: "{{ working_dir }}" # Directorio de trabajo de la aplicación
 
-  tasks:
+  tasks: # Definición de las tareas a ejecutar
 
-    - name: Add webhook to .moduleignore
-      shell: echo "webhook" > {{ working_dir }}.moduleignore
+    - name: Add webhook to .moduleignore # Tarea para agregar "webhook" al archivo .moduleignore
+      shell: echo "webhook" > {{ working_dir }}.moduleignore # Escribe "webhook" en el archivo .moduleignore
       args:
-        executable: /bin/bash
-      environment: "{{ common_environment }}"
+        executable: /bin/bash # Especifica que se use Bash para ejecutar el comando
+      environment: "{{ common_environment }}" # Usa las variables de entorno definidas
 
-    - name: Set database with Rosemary
-      shell: |
-        source {{ working_dir }}venv/bin/activate
-        cd {{ working_dir }}
-        flask db upgrade
-        rosemary db:seed -y --reset
+    - name: Set database with Rosemary # Tarea para configurar la base de datos con Rosemary
+      shell: | # Ejecuta varios comandos en Bash
+        source {{ working_dir }}venv/bin/activate # Activa el entorno virtual de Python
+        cd {{ working_dir }} # Cambia al directorio de trabajo
+        flask db upgrade # Aplica migraciones de la base de datos con Flask
+        rosemary db:seed -y --reset # Inicializa y reinicia la base de datos con Rosemary
       args:
-        executable: /bin/bash
-      environment: "{{ common_environment }}"
+        executable: /bin/bash # Especifica que se use Bash para ejecutar el comando
+      environment: "{{ common_environment }}" # Usa las variables de entorno definidas
 
-    - name: Run Flask application
-      shell: |
-        source {{ working_dir }}venv/bin/activate
-        cd {{ working_dir }}
-        nohup flask run --host=0.0.0.0 --port=5000 --reload --debug > app.log 2>&1 &
+    - name: Run Flask application # Tarea para ejecutar la aplicación Flask
+      shell: | # Ejecuta varios comandos en Bash
+        source {{ working_dir }}venv/bin/activate # Activa el entorno virtual de Python
+        cd {{ working_dir }} # Cambia al directorio de trabajo
+        nohup flask run --host=0.0.0.0 --port=5000 --reload --debug > app.log 2>&1 & # Ejecuta Flask en segundo plano y redirige la salida al archivo app.log
       args:
-        executable: /bin/bash
-      environment: "{{ common_environment }}"
-      async: 1
-      poll: 0
+        executable: /bin/bash # Especifica que se use Bash para ejecutar el comando
+      environment: "{{ common_environment }}" # Usa las variables de entorno definidas
+      async: 1 # Ejecuta la tarea de forma asíncrona
+      poll: 0 # No espera a que la tarea se complete

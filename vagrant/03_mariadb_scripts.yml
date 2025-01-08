@@ -1,46 +1,47 @@
 ---
-- hosts: all
-  become: true
+- hosts: all # Aplica las tareas a todos los hosts definidos en el inventario
+  become: true # Eleva los privilegios para ejecutar las tareas como superusuario
 
-  vars:
-    common_environment:
-      FLASK_APP_NAME: "{{ flask_app_name }}"
-      FLASK_ENV: "{{ flask_env }}"
-      DOMAIN: "{{ domain }}"
-      MARIADB_HOSTNAME: "{{ mariadb_hostname }}"
-      MARIADB_PORT: "{{ mariadb_port }}"
-      MARIADB_DATABASE: "{{ mariadb_database }}"
-      MARIADB_TEST_DATABASE: "{{ mariadb_test_database }}"
-      MARIADB_USER: "{{ mariadb_user }}"
-      MARIADB_PASSWORD: "{{ mariadb_password }}"
-      MARIADB_ROOT_PASSWORD: "{{ mariadb_root_password }}"
-      WORKING_DIR: "{{ working_dir }}"
+  vars: # Definición de variables
+    common_environment: # Diccionario con las variables de entorno necesarias
+      FLASK_APP_NAME: "{{ flask_app_name }}" # Nombre de la aplicación Flask
+      FLASK_ENV: "{{ flask_env }}" # Entorno de Flask (desarrollo, producción, etc.)
+      DOMAIN: "{{ domain }}" # Dominio de la aplicación
+      MARIADB_HOSTNAME: "{{ mariadb_hostname }}" # Hostname de MariaDB
+      MARIADB_PORT: "{{ mariadb_port }}" # Puerto de MariaDB
+      MARIADB_DATABASE: "{{ mariadb_database }}" # Nombre de la base de datos principal
+      MARIADB_TEST_DATABASE: "{{ mariadb_test_database }}" # Nombre de la base de datos de prueba
+      MARIADB_USER: "{{ mariadb_user }}" # Usuario de la base de datos
+      MARIADB_PASSWORD: "{{ mariadb_password }}" # Contraseña del usuario de la base de datos
+      MARIADB_ROOT_PASSWORD: "{{ mariadb_root_password }}" # Contraseña del usuario root de MariaDB
+      WORKING_DIR: "{{ working_dir }}" # Directorio base del proyecto
 
-  tasks:
-    - name: Set permissions for wait-for-db.sh
+  tasks: # Lista de tareas a ejecutar
+
+    - name: Set permissions for wait-for-db.sh # Configura los permisos del script wait-for-db.sh
+      file: # Módulo de Ansible para gestionar archivos y directorios
+        path: "{{ working_dir }}scripts/wait-for-db.sh" # Ruta al script
+        mode: '0755' # Establece permisos de lectura, escritura y ejecución para el propietario, y solo lectura y ejecución para otros
+        state: file # Asegura que el objetivo es un archivo
+      environment: "{{ common_environment }}" # Usa las variables de entorno definidas
+
+    - name: Set permissions for init-testing-db.sh # Configura los permisos del script init-testing-db.sh
       file:
-        path: "{{ working_dir }}scripts/wait-for-db.sh"
-        mode: '0755'
-        state: file
-      environment: "{{ common_environment }}"
+        path: "{{ working_dir }}scripts/init-testing-db.sh" # Ruta al script
+        mode: '0755' # Establece permisos de ejecución y lectura para el archivo
+        state: file # Asegura que el objetivo es un archivo
+      environment: "{{ common_environment }}" # Usa las variables de entorno definidas
 
-    - name: Set permissions for init-testing-db.sh
-      file:
-        path: "{{ working_dir }}scripts/init-testing-db.sh"
-        mode: '0755'
-        state: file
-      environment: "{{ common_environment }}"
-
-    - name: Wait for MariaDB to be ready
-      shell: |
-        {{ working_dir }}scripts/wait-for-db.sh
+    - name: Wait for MariaDB to be ready # Espera a que MariaDB esté listo usando el script wait-for-db.sh
+      shell: | # Ejecuta comandos en Bash
+        {{ working_dir }}scripts/wait-for-db.sh # Ejecuta el script que espera a que MariaDB esté disponible
       args:
-        executable: /bin/bash
-      environment: "{{ common_environment }}"
+        executable: /bin/bash # Especifica que se use Bash para ejecutar el comando
+      environment: "{{ common_environment }}" # Usa las variables de entorno definidas
 
-    - name: Initialize the database
-      shell: |
-        {{ working_dir }}scripts/init-testing-db.sh
+    - name: Initialize the database # Inicializa la base de datos usando el script init-testing-db.sh
+      shell: | # Ejecuta comandos en Bash
+        {{ working_dir }}scripts/init-testing-db.sh # Ejecuta el script que inicializa la base de datos
       args:
-        executable: /bin/bash
-      environment: "{{ common_environment }}"
+        executable: /bin/bash # Especifica que se use Bash para ejecutar el comando
+      environment: "{{ common_environment }}" # Usa las variables de entorno definidas

@@ -1,48 +1,48 @@
 ---
-- hosts: all
-  become: true
+- hosts: all # Aplica las tareas a todos los hosts definidos en el inventario
+  become: true # Eleva los privilegios para ejecutar las tareas como superusuario
 
-  tasks:
-    - name: Install MariaDB Server
-      apt:
-        name:
-          - mariadb-server
-          - python3-pymysql
-        update_cache: yes
-      become: yes
+  tasks: # Lista de tareas a ejecutar
 
-    - name: Start and enable MariaDB service
-      systemd:
-        name: mariadb
-        state: started
-        enabled: yes
+    - name: Install MariaDB Server # Instala MariaDB y la librería Python necesaria para conectarse
+      apt: # Usa el módulo APT para instalar paquetes
+        name: # Lista de paquetes a instalar
+          - mariadb-server # Servidor MariaDB
+          - python3-pymysql # Librería Python para interactuar con MariaDB
+        update_cache: yes # Actualiza la caché de APT antes de instalar
+      become: yes # Ejecuta la tarea con privilegios elevados
 
-    - name: Change default MariaDB password
-      become: yes
-      mysql_user:
-        login_unix_socket: /run/mysqld/mysqld.sock
-        login_user: 'root'
-        login_password: ''
-        name: 'root'
-        password: '{{ mariadb_root_password }}'
-        state: present
+    - name: Start and enable MariaDB service # Inicia y habilita el servicio MariaDB
+      systemd: # Usa el módulo Systemd para gestionar servicios
+        name: mariadb # Especifica el servicio MariaDB
+        state: started # Asegura que el servicio esté iniciado
+        enabled: yes # Asegura que el servicio se inicie automáticamente al arrancar el sistema
 
+    - name: Change default MariaDB password # Cambia la contraseña por defecto del usuario root en MariaDB
+      become: yes # Ejecuta la tarea con privilegios elevados
+      mysql_user: # Usa el módulo MySQL User para gestionar usuarios de la base de datos
+        login_unix_socket: /run/mysqld/mysqld.sock # Conexión vía socket de Unix
+        login_user: 'root' # Usuario con el que iniciar sesión
+        login_password: '' # Contraseña actual (vacía por defecto en instalaciones nuevas)
+        name: 'root' # Usuario al que cambiar la contraseña
+        password: '{{ mariadb_root_password }}' # Nueva contraseña para el usuario root
+        state: present # Asegura que el usuario existe y tiene la contraseña definida
 
-    - name: Create SQL script
-      copy:
-        content: |
-          CREATE DATABASE IF NOT EXISTS {{ mariadb_database }};
-          CREATE DATABASE IF NOT EXISTS {{ mariadb_test_database }};
-          CREATE USER IF NOT EXISTS '{{ mariadb_user }}'@'localhost' IDENTIFIED BY '{{ mariadb_password }}';
-          GRANT ALL PRIVILEGES ON {{ mariadb_database }}.* TO '{{ mariadb_user }}'@'localhost';
-          GRANT ALL PRIVILEGES ON {{ mariadb_test_database }}.* TO '{{ mariadb_user }}'@'localhost';
-          FLUSH PRIVILEGES;
-        dest: /tmp/setup.sql
+    - name: Create SQL script # Crea un script SQL para inicializar la base de datos
+      copy: # Usa el módulo Copy para copiar contenido a un archivo
+        content: | # Contenido del script SQL
+          CREATE DATABASE IF NOT EXISTS {{ mariadb_database }}; # Crea la base de datos principal si no existe
+          CREATE DATABASE IF NOT EXISTS {{ mariadb_test_database }}; # Crea la base de datos de pruebas si no existe
+          CREATE USER IF NOT EXISTS '{{ mariadb_user }}'@'localhost' IDENTIFIED BY '{{ mariadb_password }}'; # Crea el usuario con la contraseña especificada
+          GRANT ALL PRIVILEGES ON {{ mariadb_database }}.* TO '{{ mariadb_user }}'@'localhost'; # Concede privilegios al usuario sobre la base de datos principal
+          GRANT ALL PRIVILEGES ON {{ mariadb_test_database }}.* TO '{{ mariadb_user }}'@'localhost'; # Concede privilegios al usuario sobre la base de datos de pruebas
+          FLUSH PRIVILEGES; # Aplica los cambios en los privilegios
+        dest: /tmp/setup.sql # Ruta donde se guardará el archivo temporal
 
-    - name: Import SQL script
-      command: bash -c "mysql -u root -p'{{ mariadb_root_password }}' < /tmp/setup.sql"
+    - name: Import SQL script # Importa el script SQL para configurar la base de datos y usuarios
+      command: bash -c "mysql -u root -p'{{ mariadb_root_password }}' < /tmp/setup.sql" # Ejecuta el script SQL como usuario root
 
-    - name: Remove temporary SQL script
-      file:
-        path: /tmp/setup.sql
-        state: absent
+    - name: Remove temporary SQL script # Elimina el archivo temporal del script SQL
+      file: # Usa el módulo File para gestionar archivos
+        path: /tmp/setup.sql # Ruta del archivo a eliminar
+        state: absent # Asegura que el archivo no exista

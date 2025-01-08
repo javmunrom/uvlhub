@@ -1,52 +1,53 @@
-- hosts: all
-  become: true
+- hosts: all # Aplica las tareas a todos los hosts definidos en el inventario
+  become: true # Eleva los privilegios para ejecutar las tareas como superusuario
 
-  tasks:
-    - name: Add deadsnakes PPA (for installing Python 3.12)
-      apt_repository:
-        repo: ppa:deadsnakes/ppa
-        state: present
-        update_cache: yes
+  tasks: # Lista de tareas a ejecutar
 
-    - name: Update the system and install Python 3.12 and dependencies
-      apt:
-        name:
-          - python3.12
-          - python3.12-venv
-          - python3.12-distutils
-          - mariadb-client
-        state: present
+    - name: Add deadsnakes PPA (for installing Python 3.12) # Agrega el repositorio de Deadsnakes para instalar Python 3.12
+      apt_repository: # Módulo de Ansible para gestionar repositorios APT
+        repo: ppa:deadsnakes/ppa # Repositorio de Deadsnakes
+        state: present # Asegura que el repositorio esté presente
+        update_cache: yes # Actualiza la caché de APT tras agregar el repositorio
 
-    - name: Install pip and setuptools for Python 3.12 from source
-      shell: |
-        wget https://bootstrap.pypa.io/get-pip.py
-        python3.12 get-pip.py
+    - name: Update the system and install Python 3.12 and dependencies # Actualiza el sistema e instala Python 3.12 y sus dependencias
+      apt: # Módulo de Ansible para gestionar paquetes APT
+        name: # Lista de paquetes a instalar
+          - python3.12 # Python 3.12
+          - python3.12-venv # Módulo para crear entornos virtuales en Python 3.12
+          - python3.12-distutils # Distutils para instalar paquetes Python
+          - mariadb-client # Cliente de MariaDB
+        state: present # Asegura que los paquetes estén instalados
+
+    - name: Install pip and setuptools for Python 3.12 from source # Instala pip y setuptools desde el script oficial de Python
+      shell: | # Ejecuta varios comandos en Bash
+        wget https://bootstrap.pypa.io/get-pip.py # Descarga el script para instalar pip
+        python3.12 get-pip.py # Ejecuta el script con Python 3.12
       args:
-        executable: /bin/bash
+        executable: /bin/bash # Especifica que los comandos se ejecuten con Bash
 
-    - name: Upgrade pip and setuptools for Python 3.12
-      shell: |
-        python3.12 -m pip install --upgrade pip setuptools
+    - name: Upgrade pip and setuptools for Python 3.12 # Actualiza pip y setuptools a la última versión
+      shell: | # Ejecuta varios comandos en Bash
+        python3.12 -m pip install --upgrade pip setuptools # Actualiza pip y setuptools con Python 3.12
       args:
-        executable: /bin/bash
+        executable: /bin/bash # Especifica que los comandos se ejecuten con Bash
 
-    - name: Remove existing virtual environment if it exists
-      file:
-        path: "{{ working_dir }}venv"
-        state: absent
-        force: yes
+    - name: Remove existing virtual environment if it exists # Elimina un entorno virtual existente si ya existe
+      file: # Módulo de Ansible para gestionar archivos y directorios
+        path: "{{ working_dir }}venv" # Ruta del entorno virtual
+        state: absent # Asegura que el directorio no exista
+        force: yes # Elimina el directorio incluso si no está vacío
 
-    - name: Set up the Python 3.12 virtual environment
-      command: python3.12 -m venv {{ working_dir }}venv
+    - name: Set up the Python 3.12 virtual environment # Configura un nuevo entorno virtual con Python 3.12
+      command: python3.12 -m venv {{ working_dir }}venv # Crea un entorno virtual en la ruta especificada
       args:
-        creates: "{{ working_dir }}venv/bin/activate"
+        creates: "{{ working_dir }}venv/bin/activate" # Solo ejecuta el comando si el entorno virtual no existe
 
-    - name: Activate the virtual environment and install dependencies
-      shell: |
-        source {{ working_dir }}venv/bin/activate
-        pip install --upgrade pip
-        cd {{ working_dir }}
-        pip install -r requirements.txt
-        pip install -e ./
+    - name: Activate the virtual environment and install dependencies # Activa el entorno virtual e instala dependencias
+      shell: | # Ejecuta varios comandos en Bash
+        source {{ working_dir }}venv/bin/activate # Activa el entorno virtual
+        pip install --upgrade pip # Actualiza pip dentro del entorno virtual
+        cd {{ working_dir }} # Cambia al directorio de trabajo
+        pip install -r requirements.txt # Instala las dependencias listadas en requirements.txt
+        pip install -e ./ # Instala la aplicación en modo editable
       args:
-        executable: /bin/bash
+        executable: /bin/bash # Especifica que los comandos se ejecuten con Bash

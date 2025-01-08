@@ -1,8 +1,9 @@
 ---
-- hosts: all
-  become: true
+- hosts: all # Aplica las tareas a todos los hosts definidos en el inventario
+  become: true # Eleva los privilegios para ejecutar las tareas como superusuario
 
-  tasks:
-    - name: Update the system
-      apt:
-        update_cache: yes
+  tasks: # Lista de tareas a ejecutar
+
+    - name: Update the system # Actualiza la caché de APT del sistema
+      apt: # Usa el módulo APT para gestionar paquetes en sistemas basados en Debian/Ubuntu
+        update_cache: yes # Asegura que la lista de paquetes esté actualizada
