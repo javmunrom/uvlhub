@@ -1,26 +1,30 @@
-name: Automatic Release
+name: Automatic PR Creation
 
 on:
   push:
     branches:
-      '*'
+      - '*' # Detecta cambios en cualquier rama
 
 jobs:
-  create-release:
-    name: Create PR
+  create-pr:
+    name: Create Pull Request
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-
-    - name: Create Release
+    - name: Create Pull Request
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        RAMA=${github.ref}
+        # Extrae el nombre de la rama desde GITHUB_REF
+        RAMA=${GITHUB_REF#refs/heads/}
 
-
-        # Crea el release automáticamente
-        gh pr create --base main --head $RAMA
+        # Verifica si la rama es diferente de 'main' para evitar PRs innecesarios
+        if [ "$RAMA" != "main" ]; then
+          echo "Creating PR from branch '$RAMA' to 'main'..."
+          gh pr create --base main --head $RAMA --title "Auto-generated PR for $RAMA" --body "This PR was automatically created for branch $RAMA."
+        else
+          echo "No PR created: Branch is 'main'."
+        fi
