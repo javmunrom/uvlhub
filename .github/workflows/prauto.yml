@@ -1,0 +1,26 @@
+name: Automatic Release
+
+on:
+  push:
+    branches:
+      '*'
+
+jobs:
+  create-release:
+    name: Create PR
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+
+    - name: Create Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        RAMA=${github.ref}
+
+
+        # Crea el release automáticamente
+        gh pr create --base main --head $RAMA
