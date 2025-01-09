@@ -23,8 +23,17 @@ jobs:
 
         # Verifica si la rama es diferente de 'main' para evitar PRs innecesarios
         if [ "$RAMA" != "main" ]; then
-          echo "Creating PR from branch '$RAMA' to 'main'..."
-          gh pr create --base main --head $RAMA --title "Auto-generated PR for $RAMA" --body "This PR was automatically created for branch $RAMA."
+          echo "Checking for existing PR from branch '$RAMA' to 'main'..."
+
+          # Busca un PR existente desde esta rama hacia main
+          EXISTING_PR=$(gh pr list --base main --head "$RAMA" --json url --jq '.[0].url')
+
+          if [ -z "$EXISTING_PR" ]; then
+            echo "No existing PR found. Creating a new PR..."
+            gh pr create --base main --head $RAMA --title "Auto-generated PR for $RAMA" --body "This PR was automatically created for branch $RAMA."
+          else
+            echo "A PR already exists for branch '$RAMA': $EXISTING_PR"
+          fi
         else
           echo "No PR created: Branch is 'main'."
         fi
